@@ -1,8 +1,9 @@
+import os
+import copy
+import time
+import warnings
 import numpy as np
 import open3d as o3d
-import copy
-import os
-import warnings
 
 
 # 현재 스크립트 파일의 절대 경로를 얻습니다.
@@ -30,7 +31,6 @@ class SelectStablePose(object):
     def check_for_all_objects(self):
         
         for object in self.objects:
-            
             self.current_object = object
             self.check_for_object()
 
@@ -39,8 +39,10 @@ class SelectStablePose(object):
         self.stable_poses = np.load(self.asset_dir + self.current_object + '/stable_poses.npy', allow_pickle=True)
         # Normal case where there are multiple stable poses
         if len(self.stable_poses.shape) == 3:
+            print("3 started")
             
             print("Current object: ", self.current_object)
+            print("for start")
             
             for idx in range(self.stable_poses.shape[0]):
                 
@@ -50,14 +52,24 @@ class SelectStablePose(object):
                 print("Idx: ", idx)
                 self.current_idx = idx
                 self.current_pose = self.stable_poses[idx]
+                print("start vis pose")
                 self.visualize_in_given_pose()
+                print("vis pose")
+            print("3 finished")
             
         # Case where there is only one stable pose        
         if len(self.stable_poses.shape) == 2:
+            print("2 started")
             
             print("Current object: ", self.current_object)
             self.current_pose = self.stable_poses
+            print("start vis pose")
             self.visualize_in_given_pose()
+            print("vis pose")
+            print("2 finished")
+        
+        print("check finished")
+
                 
     def visualize_in_given_pose(self) :
         
@@ -85,13 +97,19 @@ class SelectStablePose(object):
         
         # Create the visualizer
         vis = o3d.visualization.VisualizerWithKeyCallback()
+        print("modify start")
         
         # Register the callback functions
         vis.register_key_callback(ord('S'), self.modify_stable_pose)
+        print("modify end")
         vis.register_key_callback(ord('C'), self.close_window)
-        vis.register_key_callback(ord('E'), self.__del__)
+        print("window closed")
+        vis.register_key_callback(ord('E'), self.del_window)
+        print("window start")
         vis.create_window()
         
+        print("window end")
+
         # Add the geometry to the visualizer
         vis.add_geometry(mesh1)
         vis.add_geometry(mesh_frame)
@@ -102,7 +120,13 @@ class SelectStablePose(object):
         vis.add_geometry(text_notice_pcd)
         
         # Run the visualizer
+        print("running")
         vis.run()
+        print("running end")
+
+        # print("distory window in 'visualize_in_given_pose")
+        # vis.destroy_window()
+        # del(vis)
     
     @staticmethod
     def text_3d(text, pos, direction=None, degree=0.0, density = 10, font='/usr/share/fonts/truetype/ttf-bitstream-vera/VeraMoBd.ttf', font_size=16):
@@ -156,17 +180,17 @@ class SelectStablePose(object):
         return pcd
     
     ## Callback functions
-    def __del__(self, vis):
-        vis.destroy_window()
+    def del_window(self, vis):
+        vis.close()
         exit()
         
     def close_window(self, vis):
-        vis.destroy_window()
+        vis.close()
         
     def modify_stable_pose(self, vis):
         with open(self.asset_dir + self.current_object + '/stable_poses.npy', 'wb') as f:
             np.save(f, self.current_pose)
-        vis.destroy_window()
+        vis.close()
         print("Modified stable pose for object: ", self.current_object)
         print("Idx: ", self.current_idx)
         self.is_modified = True

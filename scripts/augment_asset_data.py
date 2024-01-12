@@ -101,7 +101,7 @@ def obj_to_urdf(asset_name):
     if not mesh.is_watertight:
         print('{} is not watertight.'.format(asset_name))
     
-    for i in range(num_new_mesh):
+    for i in range(10):
         
         target_name = asset_name + '_' + str(i)
         
