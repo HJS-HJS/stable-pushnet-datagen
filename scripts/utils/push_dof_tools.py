@@ -170,7 +170,8 @@ def icrs2trajectories(icrs, approach_distance, push_speed, dt):
         => start of this trajectory == end of approach trajectory
     '''
     
-    push_distance = 0.05 # m, 0.05*pi
+    # push_distance = 0.05 # m, 0.05*pi
+    push_distance = 0.2 # m, 0.05*pi
     # push_distance = 0.628 # m, 0.2*pi
     
     push_time = push_distance / push_speed
@@ -183,7 +184,6 @@ def icrs2trajectories(icrs, approach_distance, push_speed, dt):
         x0, y0 = icr[0], icr[1]
         alpha = np.arctan2(-y0,-x0)
         r = np.sqrt(x0**2 + y0**2)
-        
         # Left - hand side ICR
         theta = np.linspace(alpha, alpha + push_distance / r, push_timesteps)
 
@@ -204,7 +204,7 @@ def icrs2trajectories(icrs, approach_distance, push_speed, dt):
         joint_trajectories.append(joint_trajectory)
         
     joint_trajectories = np.array(joint_trajectories)
-    
+
     return joint_trajectories
 
 def icrs2trajectories_vel(icrs, push_distance, push_speed, dt):
@@ -305,7 +305,6 @@ def evaluate_push_stability(eef_slider_pose_initial, eef_slider_pose_final, thre
             labels.append(1)
         else:
             labels.append(0)
-        
     return labels
     
 def get_approach_trajectories(approach_distance, push_speed, dt, num_envs):

@@ -14,5 +14,5 @@ option2_args=($(ls $asset_dir))
 for arg in "${option2_args[@]}"
 do
     sudo pkill python3
-    python3 generate_train_data.py --config $config_dir --headless True --save_results --slider_name $arg
+    python3 generate_train_data.py --config $config_dir --save_results --slider_name $arg
 done

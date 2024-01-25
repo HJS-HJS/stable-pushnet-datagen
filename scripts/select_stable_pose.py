@@ -1,10 +1,8 @@
 import os
 import copy
-import time
-import warnings
 import numpy as np
 import open3d as o3d
-
+from scipy.spatial.transform import Rotation as R
 
 # 현재 스크립트 파일의 절대 경로를 얻습니다.
 current_file_path = os.path.abspath(__file__)
@@ -25,61 +23,52 @@ class SelectStablePose(object):
         self.asset_dir = asset_dir
         self.objects = os.listdir(asset_dir)
         self.objects.sort()
-        
+
         self.check_for_all_objects()
         
     def check_for_all_objects(self):
-        
+        a = 0
         for object in self.objects:
             self.current_object = object
-            self.check_for_object()
+            # self.check_for_object()
+            if a % 11 == 0:
+                self.check_for_object()
+            a += 1
+
 
     def check_for_object(self):
         self.is_modified = False
         self.stable_poses = np.load(self.asset_dir + self.current_object + '/stable_poses.npy', allow_pickle=True)
+        self.stable_probs = np.load(self.asset_dir + self.current_object + '/stable_prob.npy', allow_pickle=True)
         # Normal case where there are multiple stable poses
+        print("Pose: ", len(self.stable_poses.shape), "\tCurrent object: ", self.current_object)
         if len(self.stable_poses.shape) == 3:
-            print("3 started")
-            
-            print("Current object: ", self.current_object)
-            print("for start")
-            
             for idx in range(self.stable_poses.shape[0]):
-                
                 if self.is_modified:
                     break
-                
-                print("Idx: ", idx)
+                print("Idx: ", idx, "\tProb: ", self.stable_probs[idx])
                 self.current_idx = idx
                 self.current_pose = self.stable_poses[idx]
-                print("start vis pose")
                 self.visualize_in_given_pose()
-                print("vis pose")
-            print("3 finished")
-            
         # Case where there is only one stable pose        
         if len(self.stable_poses.shape) == 2:
-            print("2 started")
-            
-            print("Current object: ", self.current_object)
+            pass
             self.current_pose = self.stable_poses
-            print("start vis pose")
             self.visualize_in_given_pose()
-            print("vis pose")
-            print("2 finished")
         
-        print("check finished")
-
                 
     def visualize_in_given_pose(self) :
         
         # Load the mesh
         
-        # # try:
-        # #     mesh = o3d.io.read_triangle_mesh(self.asset_dir + self.current_object + '/' + self.current_object + '.stl')
-        # # except:
+        # try:
         mesh = o3d.io.read_triangle_mesh(self.asset_dir + self.current_object + '/' + self.current_object + '.obj')
-            
+        if mesh.is_empty:
+            # mesh = o3d.io.read_triangle_mesh(self.asset_dir + self.current_object + '/' + self.current_object + '.stl')
+            pass
+        else:
+            pass
+
         mesh1 = copy.deepcopy(mesh).transform(self.current_pose)
         mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.06, origin=[0, 0, 0])
         
@@ -97,19 +86,14 @@ class SelectStablePose(object):
         
         # Create the visualizer
         vis = o3d.visualization.VisualizerWithKeyCallback()
-        print("modify start")
         
         # Register the callback functions
-        vis.register_key_callback(ord('S'), self.modify_stable_pose)
-        print("modify end")
+        vis.register_key_callback(ord('S'), self.select_stable_pose)
         vis.register_key_callback(ord('C'), self.close_window)
-        print("window closed")
         vis.register_key_callback(ord('E'), self.del_window)
-        print("window start")
+        # vis.register_key_callback(ord('M'), self.modify_stable_pose)
         vis.create_window()
         
-        print("window end")
-
         # Add the geometry to the visualizer
         vis.add_geometry(mesh1)
         vis.add_geometry(mesh_frame)
@@ -120,9 +104,7 @@ class SelectStablePose(object):
         vis.add_geometry(text_notice_pcd)
         
         # Run the visualizer
-        print("running")
         vis.run()
-        print("running end")
 
         # print("distory window in 'visualize_in_given_pose")
         # vis.destroy_window()
@@ -187,7 +169,8 @@ class SelectStablePose(object):
     def close_window(self, vis):
         vis.close()
         
-    def modify_stable_pose(self, vis):
+    def select_stable_pose(self, vis):
+        # print(self.current_pose)
         with open(self.asset_dir + self.current_object + '/stable_poses.npy', 'wb') as f:
             np.save(f, self.current_pose)
         vis.close()
@@ -195,6 +178,17 @@ class SelectStablePose(object):
         print("Idx: ", self.current_idx)
         self.is_modified = True
 
+    def modify_stable_pose(self, vis):
+        print(self.current_pose)
+        print(type(self.current_pose))
+        vis.close()
+        r = np.identity(4)
+        self.current_pose = self.current_pose.dot(r)
+        print(r)
+        print(type(r))
+        print("Modified stable pose for object: ", self.current_object)
+        print("Idx: ", self.current_idx)
+        # self.visualize_in_given_pose()
 
 if __name__ == '__main__':
     select = SelectStablePose(assets_dir)

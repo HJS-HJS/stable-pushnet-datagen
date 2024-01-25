@@ -25,9 +25,12 @@ class SamplePushContactParallel:
 
         cps = ContactPointSampler(camera_intrinsic, camera_pose, gripper_width)
         push_contacts = cps.sample(depth_image, segmask)
-        selected_idx = np.random.randint(0,len(push_contacts))
+        if len(push_contacts) == 0:
+            selected_idx = 0
+        else:
+            selected_idx = np.random.randint(0,len(push_contacts))
+        # selected_idx = np.random.randint(0,len(push_contacts))
         push_contact = push_contacts[selected_idx]
-
         
         '''
         Outputs as a dictionary with key as env_idx and value as push_contact
@@ -38,8 +41,8 @@ class SamplePushContactParallel:
     
     def sample_push_contacts(self, depth_images, segmasks, camera_poses):
         push_contact_with_idx_list= parmap.starmap(self.sample_push_contact, 
-                                                   list(zip(range(self.num_envs), depth_images, segmasks, camera_poses, repeat(self.intrinsic), repeat(self.gripper_width))),
-                                                  pm_processes=self.num_cores, pm_chunksize = self.num_cores) #pm_processes=NUM_CORES, pm_pbar={"desc":"Sampling contact points..."}
+                                                   list(zip(range(self.num_envs), depth_images, segmasks, camera_poses, repeat(self.intrinsic), repeat(self.gripper_width))))
+                                                #   pm_processes=self.num_cores, pm_chunksize = self.num_cores) #pm_processes=NUM_CORES, pm_pbar={"desc":"Sampling contact points..."}
         push_contact_with_idx_list = sorted(push_contact_with_idx_list, key=lambda x: list(x.keys())[0])
         push_contact_list = [list(contact_dict.values())[0] for contact_dict in push_contact_with_idx_list]
         
@@ -48,7 +51,7 @@ class SamplePushContactParallel:
             
 if __name__ == "__main__":
     # Load configuation file
-    config_file = "/home/hong/ws/twc-stable-pushnet/config/config_pushsim.yaml"
+    config_file = "/home/rise/catkin_ws/src/stable-pushnet-datagen/config/config_pushsim.yaml"
     
     with open(config_file,'r') as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
@@ -63,7 +66,7 @@ if __name__ == "__main__":
     
     depth_images, segmasks, camera_poses = [], [], []
     
-    for env_idx in range(180):
+    for env_idx in range(60):
         name = ("_%0" + str(6) + 'd.npy')%(env_idx)
         depth_image = np.load("/home/hong/ws/twc-stable-pushnet/src/data/depth_images/" + "depth_image" + name)
         segmask = np.load("/home/hong/ws/twc-stable-pushnet/src/data/depth_images/" + "segmask" + name)

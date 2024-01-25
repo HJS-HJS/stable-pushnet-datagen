@@ -176,6 +176,9 @@ class ContactPointSampler(object):
         projections_edges_median = projections_edges_min_max.mean(1).reshape(-1,1)
         
         pushing_directions = np.where(projections_edges_median > projections_contact_point_centers, pushing_directions, -pushing_directions)
+        # print('pushing_directions')
+        # print(type(pushing_directions))
+        # print(pushing_directions.shape)
                 
         # fig = plt.figure(figsize=(10,10))
         # ax = fig.add_subplot(111)
@@ -200,8 +203,8 @@ class ContactPointSampler(object):
         # sorted_indices = np.where(np.abs(-150 - contact_pair_angles) < 10)[0]
         
         sorted_indices = np.argsort(contact_pair_angles)
-        
         step = sorted_indices.shape[0] // self.num_push_dirs
+        # print('step:\t', step, '\tsorted_indice:\t', len(sorted_indices))
 
         try:
             sorted_indices = sorted_indices[::step]
@@ -419,8 +422,6 @@ class ContactPointSampler(object):
         contact_pair_uv = np.hstack((edge_list_uv[contact_pair_idx[:,0]], edge_list_uv[contact_pair_idx[:,1]])).reshape(-1,2,2)
         return contact_pair_uv, contact_pair_xyz
     
-    # def get_contact_points(self, edge_list_uv, edge_list_xyz)
-    
     @staticmethod
     def remove_outliers(array, threshold=3):
         # Calculate the mean and standard deviation of the array
@@ -483,7 +484,7 @@ class ContactPointSampler(object):
         outermost_indices = hull.vertices
         num_interpolated_points = 1000
         outermost_indices = np.append(outermost_indices, outermost_indices[0])
-        edge_list_xyz = self.interploate_with_even_distance(pcd_w[outermost_indices], num_interpolated_points)
+        edge_list_xyz = self.interpolate_with_even_distance(pcd_w[outermost_indices], num_interpolated_points)
         
         # # Get the points on the outermost contour
         # outermost_points = pcd_w[outermost_indices]
@@ -541,27 +542,6 @@ class ContactPointSampler(object):
         
         return edge_list_uv, edge_list_xyz
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         # # Find the naive center of the object
         # object_center = np.mean(pcd_w, axis=0)
         
@@ -595,7 +575,7 @@ class ContactPointSampler(object):
         # return depth_image_v, segmask, camera_pose_v
         
     @staticmethod
-    def interploate_with_even_distance(trajectory, num_sample):
+    def interpolate_with_even_distance(trajectory, num_sample):
         '''
         From a trajectory, interpolate the points with even Euclidean distances (xy-plane).
         

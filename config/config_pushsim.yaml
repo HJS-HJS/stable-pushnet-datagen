@@ -2,13 +2,16 @@ simulation:
   physics_engine: PHYSX
   num_threads : 16
   use_gpu_pipeline : False
-  use_gpu: False
+  use_gpu: True
   compute_device_id: 0
   graphics_device_id: 0
-  num_envs: 180 #180
+  num_envs: 55 #180
+  # num_envs: 60 #180
   FILE_ZERO_PADDING_NUM: 7
-  num_iters: 1 #30
-  dt: 0.001
+  # num_iters: 1 #30
+  num_iters: 3 #30
+  dt: 0.0167
+  # dt: 0.03
   render_freq: 1000
 
   slider_dataset: dish_urdf
@@ -26,13 +29,13 @@ simulation:
   rand_contact_rotation_range: 0 # degrees
 
   push_speed: 0.1
-  translational_push_distance: 0.01
+  translational_push_distance: 0.005 # 0.01
   initial_distance: 0.2 #0.2
   gripper_width: 0.08
 
   # Labeling threshold
   threshold_pos: 0.01 # meters
-  threshold_rot: 15 # degrees
+  threshold_rot: 7 # degrees 15
 
 # Friction coefficients
   pusher_friction_coefficient: 0

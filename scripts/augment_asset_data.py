@@ -1,11 +1,10 @@
-import trimesh
-import numpy as np
 import os
-import glob
 import xml.etree.cElementTree as ET
 from multiprocessing import Pool
 import copy
 import argparse
+import numpy as np
+import trimesh
 
 
 '''
@@ -129,7 +128,14 @@ def obj_to_urdf(asset_name):
             continue
         
         mass = 0.050
-        new_mesh.density = mass / new_mesh.volume
+
+        if new_mesh.volume <= 0:
+            new_mesh.invert()
+        if mass / 2450 < new_mesh.volume:
+            new_mesh.density = mass / new_mesh.volume
+        else:
+            new_mesh.density = 2450
+
         
         new_mesh.export(os.path.join(new_asset_path, target_name + obj_ext))
 

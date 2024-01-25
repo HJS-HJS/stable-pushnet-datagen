@@ -16,7 +16,7 @@ def fibonacci_sphere(samples=2000):
 
         theta = phi * i  # golden angle increment
 
-        y = np.cos(theta) *     radius
+        y = np.cos(theta) * radius
         z = np.sin(theta) * radius
 
         points.append((x, y, z))

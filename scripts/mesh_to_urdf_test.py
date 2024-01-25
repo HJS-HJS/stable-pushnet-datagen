@@ -1,6 +1,5 @@
 import os
 import glob
-import time
 import argparse
 from itertools import repeat
 import xml.etree.cElementTree as ET
@@ -20,12 +19,12 @@ gripper_target = GRIPPER_WIDTH * GRIPPER_FRAC
 parser = argparse.ArgumentParser(description='This script converts mesh data to Isaac Gym asset.')
 parser.add_argument('--root', required=True, help='Path to mesh folder')
 parser.add_argument('--target', required=True, help='Path to asset folder')
-parser.add_argument('--extension', required=True, help='Mesh extension (e.g. .obj, .stl, etc.)')
+parser.add_argument('--mesh_name', required=True, help='Mesh mesh_name')
 args = parser.parse_args()
 
 mesh_root_dir = args.root
 target_root_dir = args.target
-obj_ext = args.extension
+obj_ext = args.mesh_name
 
 if not os.path.exists(target_root_dir):
     os.makedirs(target_root_dir)
@@ -58,7 +57,6 @@ def indent(elem, level=0, more_sibs=False):
 
 
 def obj_to_urdf(mesh_file):
-    start_time = time.time()
     # if target exists, skip
     target_name = os.path.basename(mesh_file).split('.')[0]  # A0, A1, ...
     # if os.path.exists(os.path.join(target_root_dir, target_name)):
@@ -67,10 +65,10 @@ def obj_to_urdf(mesh_file):
     # print('processing: ', mesh_file)
     # Load mesh
     mesh = trimesh.load(os.path.join(mesh_file))
-    # if not mesh.is_watertight:
-        # print('\t{} is not watertight.'.format(mesh_file))
-    # else:
-        # pass
+    if not mesh.is_watertight:
+        print('\t{} is not watertight.'.format(mesh_file))
+    else:
+        pass
 
     # make directory
     os.makedirs(os.path.join(target_root_dir, target_name), exist_ok=True)
@@ -80,23 +78,20 @@ def obj_to_urdf(mesh_file):
     max_dim = np.max(exts)
     scale = GRIPPER_WIDTH / max_dim
     scale = scale * 1.34
-    # mesh.apply_scale(0.001) # mm to m scale
     # mesh.show()
-    # print('before:\t', np.max(mesh.bounding_box_oriented.primitive.extents))
+    # mesh.apply_scale(0.001) # mm to m scale
     mesh.apply_scale(scale) # mm to m scale
-    # print('\tafter:\t',np.max(mesh.bounding_box_oriented.primitive.extents))
     # mesh.show()
 
     mass = 0.050
-    if mesh.volume <= 0:
+    if mesh.volume < 0:
         mesh.invert()
         # print(mesh.convex_hull.volume, '\n\t', mesh_file, '\tmax_dim:\t',max_dim,'\tscale:\t', scale, '\n\tvolume:\t',mesh.volume, '\tconvex volume:\t', mesh.convex_hull.volume)
         # mesh.show()
     elif mesh.volume == 0:
-        # print(mesh.convex_hull.volume, '\n\t', mesh_file, '\tmax_dim:\t',max_dim,'\tscale:\t', scale, '\n\tvolume:\t',mesh.volume, '\tconvex volume:\t', mesh.convex_hull.volume)
         # mesh.show()
-        # mesh.invert()
         pass
+    # mesh.vertices -= mesh.center_mass
     if mass / 2450 < mesh.volume:
         mesh.density = mass/mesh.volume
     else:
@@ -104,7 +99,9 @@ def obj_to_urdf(mesh_file):
     mesh.vertices -= mesh.center_mass
 
     # save mesh
-    mesh.export(os.path.join(target_root_dir, target_name, target_name + obj_ext))
+    mesh.export(os.path.join(target_root_dir, target_name, obj_ext))
+    print('name:\t',target_name)
+
     # create urdf file
     urdf = ET.Element('robot', name=target_name)
     link = ET.SubElement(urdf, 'link', name=target_name)
@@ -121,12 +118,12 @@ def obj_to_urdf(mesh_file):
     visual = ET.SubElement(link, 'visual')
     origin = ET.SubElement(visual, 'origin', xyz='0 0 0', rpy='0 0 0')
     geometry = ET.SubElement(visual, 'geometry')
-    _mesh = ET.SubElement(geometry, 'mesh', filename=os.path.join(target_root_dir, target_name, target_name + obj_ext), scale='1 1 1')
+    _mesh = ET.SubElement(geometry, 'mesh', filename=os.path.join(target_root_dir, target_name, obj_ext), scale='1 1 1')
 
     collision = ET.SubElement(link, 'collision')
     origin = ET.SubElement(collision, 'origin', xyz='0 0 0', rpy='0 0 0')
     geometry = ET.SubElement(collision, 'geometry')
-    _mesh = ET.SubElement(geometry, 'mesh', filename=os.path.join(target_root_dir, target_name, target_name + obj_ext), scale='1 1 1')
+    _mesh = ET.SubElement(geometry, 'mesh', filename=os.path.join(target_root_dir, target_name, obj_ext), scale='1 1 1')
 
     # save urdf file
     indent(urdf)
@@ -135,9 +132,9 @@ def obj_to_urdf(mesh_file):
         tree.write(f, encoding='utf-8', xml_declaration=True)
 
     # get stable poses
-    mesh.apply_scale(100.0)
+    # mesh.apply_scale(1000.0)
     # stable_poses, prob = mesh.compute_stable_poses(n_samples=10, sigma=0.1)
-    stable_poses, prob = mesh.compute_stable_poses(center_mass=mesh.center_mass, n_samples=1)
+    stable_poses, prob = mesh.compute_stable_poses(center_mass=mesh.center_mass,n_samples=10, sigma=0.1)
     for i in range(len(stable_poses)):
         stable_poses[i][0:3, 3] *= 0.001
 
@@ -154,18 +151,11 @@ def obj_to_urdf(mesh_file):
                 s += ', '
         s += '\n'
         f.write(s)
-    if (time.time() - start_time) > 40:
-        print(f'\t{time.time() - start_time}finish', target_name)
-    else:
-        print(f'\t finish', target_name)
-        
+    print('\tfinish', target_name)
+
 
 if __name__ == '__main__':
     # get file list
-    obj_files = glob.glob(os.path.join(mesh_root_dir, '*' + obj_ext))
-    obj_files.sort()
+    obj_files = glob.glob(os.path.join(mesh_root_dir + '/' + obj_ext))
 
-    print(obj_files)
-
-    with Pool(2) as pool:
-        pool.map(obj_to_urdf, obj_files)
+    obj_to_urdf(mesh_root_dir + '/' + obj_ext)
