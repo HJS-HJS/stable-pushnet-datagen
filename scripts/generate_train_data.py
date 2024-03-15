@@ -40,14 +40,14 @@ class PushSim(object):
         # parse arguments
         parser = argparse.ArgumentParser(description="Push Sim: Push simulation of tableware for stable pushing network training data generation")
         parser.add_argument('--config', type=str, default="/home/rise/catkin_ws/src/stable-pushnet-datagen/config/config_pushsim.yaml", help='Configuration file')
-        parser.add_argument('--headless', type=bool, default=False, help='Turn on the viewer')
+        parser.add_argument('--headless', type=bool, default=True, help='Turn on the viewer')
         parser.add_argument('--analytical', type=bool, default=False, help='Whether to use analytical stable region or not')
         parser.add_argument('--use_gpu_pipeline', type=bool, default=False, help='Whether to use gpu pipeline')
         parser.add_argument('--save_results', action='store_true', help='save results')
         # parser.add_argument('-d','--slider_dataset', type=str, default='dish_urdf', help='slider dataset name')
         parser.add_argument('-n','--slider_name', type=str, default='glass', help='slider name')
         self.args = parser.parse_args()
-        self.sleep = False
+        self.sleep = True
         
         self._load_configuration()
         self._create_simulation()
